@@ -7,7 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: unzip -o KidsWorld.zip
+      - name: Unzip project
+        run: |
+          ls -la
+          Z=$(ls *.zip 2>/dev/null | head -1)
+          if [ -n "$Z" ]; then unzip -o "$Z"; fi
+          F=$(find . -name settings.gradle -not -path './.git/*' | head -1)
+          if [ -z "$F" ]; then echo "ZIP FILE NOT FOUND - upload KidsWorld.zip"; exit 1; fi
+          echo "PROJ=$(dirname "$F")" >> $GITHUB_ENV
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -16,9 +23,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle assembleRelease
-        working-directory: KidsWorld
+      - name: Build
+        run: gradle assembleRelease
+        working-directory: ${{ env.PROJ }}
       - uses: actions/upload-artifact@v4
         with:
           name: KidsWorld-APK
-          path: KidsWorld/app/build/outputs/apk/release/*.apk
+          path: '**/app/build/outputs/apk/release/*.apk'
